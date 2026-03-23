@@ -11,10 +11,13 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Initialize extensions
     db.init_app(app)
     jwt.init_app(app)
     CORS(app)
+
+    with app.app_context():
+        from app.models import User, Player, Match, ChatMessage
+        db.create_all()
 
     # Register blueprints
     from app.routes.auth import auth_bp
