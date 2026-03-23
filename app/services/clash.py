@@ -25,3 +25,49 @@ def get_player_info(player_tag):
         return response.json()
     except requests.exceptions.RequestException as e:
         return None
+
+#Takes the raw JSON that represents a 'match' and converts it into natural language representation
+def serialize_match(match):
+    player_battle_data = match['team'][0]
+    opponent_battle_data = match['opponent'][0]
+
+    player_crowns = player_battle_data['crowns']
+    opponent_crowns = opponent_battle_data['crowns']
+    result = 'won' if player_crowns > opponent_crowns else 'lost'
+
+    team_deck = get_deck_info(player_battle_data['cards'])
+    opponent_deck = get_deck_info(opponent_battle_data['cards'])
+
+    player_elixir_leaked = player_battle_data.get('elixirLeaked', 0)
+    opponent_elixir_leaked = opponent_battle_data.get('elixirLeaked', 0)
+
+    king_tower_hp = player_battle_data.get('kingTowerHitPoints', 0)
+    princess_towers = player_battle_data.get('princessTowersHitPoints')
+
+    if princess_towers:
+        tower_status = f"Princess towers had {princess_towers[0]} and {princess_towers[1]} HP remaining."
+    else:
+        tower_status = "All towers were destroyed."
+
+    return (
+        f"Player {result} the match {player_crowns}-{opponent_crowns} crowns. "
+        f"Player used: {team_deck}. "
+        f"Opponent used: {opponent_deck}. "
+        f"Player leaked {player_elixir_leaked} elixir, opponent leaked {opponent_elixir_leaked} elixir. "
+        f"Player king tower had {king_tower_hp} HP remaining. "
+        f"{tower_status}"
+    )
+
+
+
+def get_deck_info(cards):
+    deck = []
+    for card in cards:
+        name = card['name']
+        level = card['level']
+        max_level = card['maxLevel']
+        elixir = card['elixirCost']
+        deck.append(f"{name} (level {level}/{max_level}, {elixir} elixir)")
+    return ', '.join(deck)
+
+    
