@@ -3,7 +3,10 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from config import Config
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
+limiter = Limiter(get_remote_address, default_limits=["10 per minute"])
 db = SQLAlchemy()
 jwt = JWTManager()
 
@@ -13,6 +16,7 @@ def create_app():
 
     db.init_app(app)
     jwt.init_app(app)
+    limiter.init_app(app)
     CORS(app)
 
     with app.app_context():

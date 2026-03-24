@@ -6,12 +6,20 @@ from app import db
 
 auth_bp = Blueprint('auth', __name__)
 
+MIN_PASSWORD_LENGTH = 6
+
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
+    
+    if not username or not email or not password:
+        return jsonify({'message': 'All fields are required'}), 400
+
+    if len(password) < MIN_PASSWORD_LENGTH:
+        return jsonify({'message': f'Password must be at least {MIN_PASSWORD_LENGTH} characters'}), 400
 
     existing_user = User.query.filter_by(username=username).first()
     if existing_user:
