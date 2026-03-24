@@ -9,7 +9,7 @@ import traceback
 
 def store_match_embeddings(matches, player_id):
     try:
-        for i, match in enumerate(matches):
+        for match in matches:
             # skip matches that don't have standard 1v1 structure
             if not match.get('team') or not match.get('opponent'):
                 continue
