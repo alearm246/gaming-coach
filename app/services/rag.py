@@ -6,6 +6,7 @@ from datetime import datetime
 from app import db
 import traceback
 
+VALID_GAME_MODES = {'PvP', 'pathOfLegend'}
 
 def store_match_embeddings(matches, player_id):
     try:
@@ -15,6 +16,10 @@ def store_match_embeddings(matches, player_id):
                 continue
             if len(match['team']) == 0 or len(match['opponent']) == 0:
                 continue
+            if match.get('type') not in VALID_GAME_MODES:
+                continue
+            
+            print(f"Match type: {match.get('type')}")
             
             match_text = serialize_match(match)
             embedding = embed_text(match_text)
