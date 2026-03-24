@@ -45,7 +45,10 @@ def serialize_match(match):
     princess_towers = player_battle_data.get('princessTowersHitPoints')
 
     if princess_towers:
-        tower_status = f"Princess towers had {princess_towers[0]} and {princess_towers[1]} HP remaining."
+        if len(princess_towers) == 1:
+            tower_status = f"One princess tower destroyed and second one had {princess_towers[0]} HP remaining"
+        else: 
+            tower_status = f"Princess towers had {princess_towers[0]} and {princess_towers[1]} HP remaining."
     else:
         tower_status = "All towers were destroyed."
 
@@ -66,7 +69,7 @@ def get_deck_info(cards):
         name = card['name']
         level = card['level']
         max_level = card['maxLevel']
-        elixir = card['elixirCost']
+        elixir = card.get('elixirCost', 'variable')
         deck.append(f"{name} (level {level}/{max_level}, {elixir} elixir)")
     return ', '.join(deck)
 

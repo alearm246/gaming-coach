@@ -4,10 +4,18 @@ from app.models.player import Player
 from app.models.match import Match
 from datetime import datetime
 from app import db
+import traceback
+
 
 def store_match_embeddings(matches, player_id):
     try:
-        for match in matches:
+        for i, match in enumerate(matches):
+            # skip matches that don't have standard 1v1 structure
+            if not match.get('team') or not match.get('opponent'):
+                continue
+            if len(match['team']) == 0 or len(match['opponent']) == 0:
+                continue
+            
             match_text = serialize_match(match)
             embedding = embed_text(match_text)
 
@@ -28,6 +36,7 @@ def store_match_embeddings(matches, player_id):
     except Exception as e:
         db.session.rollback()
         print(f'Error: {e}')
+        traceback.print_exc()
         return None
 
     

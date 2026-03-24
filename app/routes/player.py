@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.player import Player
 from app.models.user import User
 from app.services.clash import get_player_info, get_battle_log
+from app.services.rag import store_match_embeddings
 from app import db
 
 player_bp = Blueprint('player', __name__)
@@ -18,7 +19,7 @@ def connect_player_account():
     if not player:
         return jsonify({'message': 'player with player tag does not exist'}), 400
 
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
 
     existing_player = Player.query.filter_by(player_tag=player_tag).first()
 
@@ -30,9 +31,12 @@ def connect_player_account():
 
         db.session.add(new_player)
         db.session.commit()
+
+        matches = get_battle_log(new_player.player_tag)
+        store_match_embeddings(matches, new_player.id)
     except Exception as e:
         db.session.rollback()
-        return jsonify({'message': 'Server error'}), 500
+        return jsonify({'message': f'Server error: {e}'}), 500
 
     #get battle logs and store embeddings
 
