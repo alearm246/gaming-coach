@@ -7,3 +7,4 @@ dist/
 .DS_Store
 instance/
 test.py
+README-feature.md
