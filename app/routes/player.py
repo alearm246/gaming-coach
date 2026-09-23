@@ -3,8 +3,9 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.player import Player
 from app.models.user import User
 from app.services.clash import get_player_info, get_battle_log
-from app.services.rag import store_match_embeddings
+from app.services.rag import store_matches
 from app import db
+from datetime import datetime, timezone
 
 player_bp = Blueprint('player', __name__)
 
@@ -33,13 +34,37 @@ def connect_player_account():
         db.session.commit()
 
         matches = get_battle_log(new_player.player_tag)
-        store_match_embeddings(matches, new_player.id)
+        
+        if not matches:
+            return jsonify({'message': 'something went wrong when trying to get battle log'}), 500
+        
+        store_matches(matches, new_player.id)
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': f'Server error: {e}'}), 500
 
-    #get battle logs and store embeddings
-
-    return jsonify({'player_tag': player_tag}), 201 
+    return jsonify({'player_tag': player_tag}), 201
 
 
+@player_bp.route('/sync', methods=['POST'])
+@jwt_required()
+def sync_player():
+    data = request.get_json()
+    player_id = data.get('player_id')
+
+    user_id = int(get_jwt_identity())
+    player = Player.query.filter_by(id=player_id, user_id=user_id).first()
+
+    if not player:
+        return jsonify({'message': 'player not found'}), 404
+
+    matches = get_battle_log(player.player_tag)
+    if not matches:
+        return jsonify({'message': 'failed to fetch battle log'}), 500
+
+    store_matches(matches, player.id)
+
+    player.last_synced_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+    return jsonify({'message': 'sync complete', 'player_tag': player.player_tag}), 200

@@ -11,8 +11,11 @@ class Config:
     # JWT
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
-    # OpenAI
+    # OpenAI (embeddings only)
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+    # Anthropic (coaching LLM)
+    ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
 
     # Clash Royale
     CLASH_API_KEY = os.getenv('CLASH_API_KEY')

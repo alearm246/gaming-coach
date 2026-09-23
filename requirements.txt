@@ -5,6 +5,11 @@ flask-cors
 psycopg2-binary
 python-dotenv
 openai
+anthropic
 requests
 pgvector
 flask-limiter
+langchain
+langchain-anthropic
+langgraph
+langchain-postgres
