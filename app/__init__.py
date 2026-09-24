@@ -1,5 +1,6 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from config import Config
@@ -31,5 +32,10 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(player_bp, url_prefix='/api/player')
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
+    
+    @app.route("/api/health")
+    def health():
+        db.session.execute(text("SELECT 1"))
+        return jsonify({"status": "ok", "database": "connected"})
 
     return app
