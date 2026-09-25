@@ -1,83 +1,45 @@
+# services/clash_client.py
 import requests
-import os
+from urllib.parse import quote
+from config import Config
 
 BASE_URL = "https://api.clashroyale.com/v1"
+TIMEOUT = 10
 
-def get_battle_log(player_tag):
-    #URLs already resesrve # for something else we need to replace with %23
+class ClashAPIError(Exception):
+    pass
+
+class PlayerNotFoundError(ClashAPIError):
+    pass
+
+session = requests.Session()
+session.headers.update({"Authorization": f"Bearer {Config.CLASH_API_KEY}"})
+
+def normalize_tag(player_tag: str) -> str:
+    tag = player_tag.strip().upper()
+    return tag if tag.startswith("#") else f"#{tag}"
+
+def _get(path: str):
     try:
-        url = f"{BASE_URL}/players/{player_tag.replace('#', '%23')}/battlelog"
-        response = requests.get(url, headers={
-            'Authorization': f"Bearer {os.getenv('CLASH_API_KEY')}"
-        })
-        response.raise_for_status()
-        return response.json()
+        response = session.get(f"{BASE_URL}{path}", timeout=TIMEOUT)
     except requests.exceptions.RequestException as e:
-        return None
+        raise ClashAPIError(f"Could not reach Clash Royale API: {e}")
 
-def get_player_info(player_tag):
-    try:
-        url = f"{BASE_URL}/players/{player_tag.replace('#', '%23')}"
-        response = requests.get(url, headers={
-            'Authorization': f"Bearer {os.getenv('CLASH_API_KEY')}"
-        })
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        return None
+    if response.status_code == 404:
+        raise PlayerNotFoundError("Player not found")
+    if not response.ok:
+        raise ClashAPIError(f"Clash Royale API error {response.status_code}: {response.text}")
 
-#Takes the raw JSON that represents a 'match' and converts it into natural language representation
-def serialize_match(player_battle_data, opponent_battle_data, result, player_crowns, opponent_crowns, player_elixir_leaked, opponent_elixir_leaked):
-    team_deck = get_deck_info(player_battle_data['cards'])
-    opponent_deck = get_deck_info(opponent_battle_data['cards'])
+    return response.json()
 
-    king_tower_hp = player_battle_data.get('kingTowerHitPoints', 0)
-    princess_towers = player_battle_data.get('princessTowersHitPoints')
+def _encoded(player_tag: str) -> str:
+    return quote(normalize_tag(player_tag), safe="")
 
-    if princess_towers:
-        if len(princess_towers) == 1:
-            tower_status = f"One princess tower destroyed and second one had {princess_towers[0]} HP remaining"
-        else:
-            tower_status = f"Princess towers had {princess_towers[0]} and {princess_towers[1]} HP remaining."
-    else:
-        tower_status = "All towers were destroyed."
+def get_player_info(player_tag: str) -> dict:
+    return _get(f"/players/{_encoded(player_tag)}")
 
-    return (
-        f"Player {result} the match {player_crowns}-{opponent_crowns} crowns. "
-        f"Player used: {team_deck}. "
-        f"Opponent used: {opponent_deck}. "
-        f"Player leaked {player_elixir_leaked} elixir, opponent leaked {opponent_elixir_leaked} elixir. "
-        f"Player king tower had {king_tower_hp} HP remaining. "
-        f"{tower_status}"
-    )
+def get_battle_log(player_tag: str) -> list:
+    return _get(f"/players/{_encoded(player_tag)}/battlelog")
 
-
-
-def get_player_cards(player_tag):
-    player = get_player_info(player_tag)
-    if not player:
-        return None
-    return player.get('cards', [])
-
-def get_all_cards():
-    try:
-        url = f"{BASE_URL}/cards"
-        response = requests.get(url, headers={
-            'Authorization': f"Bearer {os.getenv('CLASH_API_KEY')}"
-        })
-        response.raise_for_status()
-        return response.json().get('items', [])
-    except requests.exceptions.RequestException:
-        return None
-
-def get_deck_info(cards):
-    deck = []
-    for card in cards:
-        name = card['name']
-        level = card['level']
-        max_level = card['maxLevel']
-        elixir = card.get('elixirCost', 'variable')
-        deck.append(f"{name} (level {level}/{max_level}, {elixir} elixir)")
-    return ', '.join(deck)
-
-    
+def get_all_cards() -> list:
+    return _get("/cards").get("items", [])

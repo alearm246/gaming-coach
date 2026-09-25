@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
-from config import Config
+from app.config import Config
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
@@ -32,6 +32,10 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(player_bp, url_prefix='/api/player')
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
+    
+    @app.route("/")
+    def greeting():
+        return "Welcome to the gaming coach api\n"
     
     @app.route("/api/health")
     def health():
